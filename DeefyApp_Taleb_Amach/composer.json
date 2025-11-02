@@ -1,0 +1,10 @@
+{
+    "name": "iut/deefy",
+    "type": "project",
+    "autoload": {
+        "psr-4": {
+            "IUT\\Deefy\\": "src/"
+        }
+    },
+    "require": {}
+}
