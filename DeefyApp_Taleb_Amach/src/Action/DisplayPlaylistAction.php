@@ -1,30 +1,47 @@
 <?php
+// File: `src/Action/DisplayPlaylistAction.php`
 namespace IUT\Deefy\Action;
 
-use IUT\Deefy\Entity\Playlist;
-use IUT\Deefy\Entity\AlbumTrack;
-use IUT\Deefy\Entity\PodcastTrack;
+use IUT\Deefy\Repository\DeefyRepository;
 use IUT\Deefy\Render\AudioListRenderer;
 use IUT\Deefy\Render\RenderInterface;
+use IUT\Deefy\Auth\Authz;
+use IUT\Deefy\Auth\AuthnException;
 
 class DisplayPlaylistAction extends Action
 {
     public function execute(): string
     {
-        
-        $playlist = new Playlist("Ma Super Playlist");
-        $playlist->addTrack(new AlbumTrack("Track 1", "Artiste 1"));
-        $playlist->addTrack(new PodcastTrack("Podcast 1", "Auteur 1"));
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
 
-        
-        $renderer = new AudioListRenderer($playlist);
-        $playlistHtml = $renderer->render(RenderInterface::LONG);
+        $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
+        if ($id <= 0) {
+            return "<p>ID de playlist invalide.</p>";
+        }
 
-        return "
-            <h2>Ma Playlist</h2>
-            <div class='playlist'>$playlistHtml</div>
-            <p><a href='index.php?action=add-track'>Ajouter une piste</a></p>
-            <p><a href='index.php'>Retour à l'accueil</a></p>
-        ";
+        try {
+            // contrôle d'accès : propriétaire (user2playlist) ou admin
+            Authz::checkPlaylistOwner($id);
+
+            $repo = DeefyRepository::getInstance();
+            $playlist = $repo->findPlaylistById($id);
+            if ($playlist === null) {
+                return "<p>Playlist introuvable (ID: $id).</p>";
+            }
+
+            $renderer = new AudioListRenderer($playlist);
+            $playlistHtml = $renderer->render(RenderInterface::LONG);
+
+            return "
+                <h2>Playlist: " . htmlspecialchars($playlist->getName(), ENT_QUOTES, 'UTF-8') . "</h2>
+                <div class='playlist'>$playlistHtml</div>
+            ";
+        } catch (AuthnException $e) {
+            return "<p>Accès refusé : " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . "</p>";
+        } catch (\Exception $e) {
+            return "<p>Erreur lors de l'affichage de la playlist : " . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . "</p>";
+        }
     }
 }

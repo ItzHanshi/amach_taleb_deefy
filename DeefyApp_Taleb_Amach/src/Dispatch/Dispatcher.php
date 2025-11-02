@@ -1,4 +1,5 @@
 <?php
+// File: src/Dispatch/Dispatcher.php
 namespace IUT\Deefy\Dispatch;
 
 use IUT\Deefy\Action\DefaultAction;
@@ -24,11 +25,13 @@ class Dispatcher
             'add-track' => (new \IUT\Deefy\Action\AddPodcastTrackAction())->execute(),
             'add-user' => (new \IUT\Deefy\Action\AddUserAction())->execute(),
             'signin' => (new \IUT\Deefy\Action\SigninAction())->execute(),
+            'display-playlist' => (new \IUT\Deefy\Action\DisplayPlaylistAction())->execute(),
             default => (new \IUT\Deefy\Action\DefaultAction())->execute(),
         };
         $this->renderPage($html);
     }
-private function renderPage(string $html): void
+
+    private function renderPage(string $html): void
     {
         echo <<<HTML
         <!DOCTYPE html>

@@ -121,4 +121,16 @@ class AuthnProvider
             throw new AuthnException('Erreur lors de l\'inscription : ' . $e->getMessage());
         }
     }
+    public static function getSignedInUser(): array
+    {
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
+
+        if (!isset($_SESSION['user']) || !is_array($_SESSION['user'])) {
+            throw new AuthnException('Aucun utilisateur authentifié.');
+        }
+
+        return $_SESSION['user'];
+    }
 }

@@ -144,4 +144,59 @@ class DeefyRepository
             throw new Exception("Erreur lors de l'ajout de la piste à la playlist: " . $e->getMessage());
         }
     }
+
+    /**
+     * Trouver une playlist par son ID, charger ses pistes et retourner l'objet Playlist.
+     * Retourne null si la playlist n'existe pas.
+     */
+    public function findPlaylistById(int $id): ?Playlist
+    {
+        try {
+            $stmt = $this->pdo->prepare("SELECT id, nom FROM playlist WHERE id = ? LIMIT 1");
+            $stmt->execute([$id]);
+            $plData = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$plData) {
+                return null;
+            }
+
+            $playlist = new Playlist($plData['nom']);
+
+            // récupérer les pistes liées dans l'ordre
+            $stmt = $this->pdo->prepare("
+                SELECT t.id, t.titre, t.duree, t.type, t.artiste_album, t.auteur_podcast
+                FROM playlist2track p2t
+                JOIN track t ON p2t.id_track = t.id
+                WHERE p2t.id_pl = ?
+                ORDER BY p2t.no_piste_dans_liste
+            ");
+            $stmt->execute([$id]);
+            $tracks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($tracks as $row) {
+                $title = $row['titre'] ?? '';
+                $duration = $row['duree'] ?? null;
+                $type = $row['type'] ?? '';
+
+                if ($type === 'album') {
+                    $trackObj = new AlbumTrack($title, $row['artiste_album'] ?? '');
+                } elseif ($type === 'podcast') {
+                    $trackObj = new PodcastTrack($title, $row['auteur_podcast'] ?? '');
+                } else {
+                    // piste générique
+                    $trackObj = new AudioTrack($title);
+                }
+
+                // si la propriété duration est publique sur les entités, on l'affecte
+                if (property_exists($trackObj, 'duration')) {
+                    $trackObj->duration = $duration;
+                }
+
+                $playlist->addTrack($trackObj);
+            }
+
+            return $playlist;
+        } catch (Exception $e) {
+            throw new Exception("Erreur lors de la récupération de la playlist: " . $e->getMessage());
+        }
+    }
 }

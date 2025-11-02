@@ -6,7 +6,7 @@ use IUT\Deefy\InvalidPropertyNameException;
 
 class AudioTrack
 {
-    public function __construct(protected string $title, protected int $duration = 0)
+    public function __construct(protected string $title, public int $duration = 0)
     {
     }
 
